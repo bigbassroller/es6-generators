@@ -1,4 +1,4 @@
-# es6-generators
+# es6-generators notes on (The 80/20 Guide to ES2015 Generators with Valeri Karpov)[http://es2015generators.com/]
 
 see index.js for list of examples
 
