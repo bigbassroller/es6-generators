@@ -133,7 +133,151 @@ for (const x of iterable) {
 	x; // 1, 1, 2, 3, 5, ..., 555
 }
 
-// A Brief Overview of Symbols
+
+// symbols don't appear in the output of Object.keys()
+Symbol.iterator; // Symbol(Symbol.iterator)
+
+let iterable = {};
+iterable[Symbol.iterator] = function() {
+	return fibonacciGenerator(10);
+};
+
+iterable.iterator; // undefined
+
+object.keys(iterable); // Empty arrys
+
+
+// Iterables and Generators
+
+// Generator objects are iterables, not generator functions.
+// you can't run a for/of loop on a generator function.
+
+fibonacciGenerator[Symbol.iterable]; // Undefined
+fibonacciGenerator(10)[Symbol.iterable]; // Function
+
+for (const x of fibonacciGenerator) {} // Error!
+for (const x of fibonacciGenerator(10)) {} // OK
+
+//Once a generator is done, subsequent for/of loops will exit immediately.
+const fibonacci = fibonacciGenerator(10);
+fibonacci[Symbol.iterator]() === fibonacci; // true
+for (const x of fibonacci) {
+	// 1, 1, 2, 3, 5, ..., 55
+}
+for (const x of fibonacci) {
+	// Doesn't run!
+}
+
+
+// Error Handling
+
+const generatorFunction = function*() {
+	throw new Error('oops!');
+};
+
+const generator = generatorFunction();
+
+// throws an error
+generator.next();
+
+// If you call next() asynchronously, you will lose the original stack trace.
+
+const generatorFunction = function*() {
+	throw new Error('oops!');
+};
+
+const generator = generatorFunction();
+
+setTimeout(() => {
+	try {
+		generator.next();
+	} catch (err) {
+		/**
+		* Error: oops!
+		* at generatorFunction (books.js:2:15)
+		* at next (native)
+		* at null._onTimeout (book.js:18:21)
+		* at Timer.lisOnTimeout (timers.js:89:15)
+		*/
+		err.stack;
+	}
+}, 0);
+
+// Re-entry With Error
+
+// You can use throw() function to give the calling functin back control
+// with a try/catch
+
+const fakeFibonacciGenerator = function*() {
+	try {
+		yield 3;
+	} catch (error) {
+		error; // Error : expected 1, got 3
+	}
+};
+const fibonacci = fakeFibonacciGenerator();
+
+const x = fibonacci.next();
+fibonacci.throw(new Error(`Expected 1, got ${x.value}`));
+// { value: undefined, done: true }
+fibonacci.next();
+
+// Case Study: Handling Async Errors
+
+// The next() function can take a parameter that then becomes the 
+// return value of the yield statement
+const generatorFunction = function*() {
+	const fullName = yield ['John', 'Smith'];
+	fullName; // 'John Smith'
+};
+
+const generator = generatorFunction();
+// Execute up to the first `yield`
+const next = generator.next();
+// Join ['John', 'Smith'] => 'John Smith' and use it as the 
+// result of `yield`, the execute the rest of the generator function
+generator.next(next.value.join(' '));
+
+// Run a Generator function that yields an asynchronous function without any errors.
+const async = function(callback) {
+	setTimeout(() => callback(null, 'Hello, Async!'), 10);
+};
+
+const generatorFunction = function*() {
+	const v = yield async;
+	v: // 'Hello, Async!'
+};
+
+const generator = generatorFunction(); 
+const res = generator.next();
+res.value(function(error, res) {
+	generator.next(res);
+});
+
+// Now it can call throw() asynchronously with try/catch. This is the basis
+// of the co library.
+
+const async = function(callback) {
+	setTimeout(() => callback(new Error('Oops!')), 10);
+};
+
+const generatorFunction = function*() {
+	try {
+		yield async;
+	} catch (error) {
+		error; // Error: Oops!
+	}
+};
+
+const generator = generatorFunction();
+const res = generator.next();
+res.value(function(error, res) {
+	generator.throw(error);
+});
+
+
+
+
 
 
 
